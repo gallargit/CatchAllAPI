@@ -5,12 +5,16 @@ using System.Web.Http;
 
 namespace CatchAll.Controllers
 {
+    [Route("{**catchAll}")]
     public class CatchAllController : ApiController
     {
-        private async Task<IHttpActionResult> ProcessAny()
+        [AcceptVerbs("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "TRACE", "CONNECT")]
+        public async Task<IHttpActionResult> CatchAll()
         {
             var route = HttpContext.Current.Request.CurrentExecutionFilePath;
-            // http://localhost/catchall/demo/route?dummyparam=1
+
+            //if a specific querystring parameter is specified, return special data
+            // http://localhost/CatchAllAPI/demo/route?dummyparam=1
             if (HttpContext.Current.Request.QueryString["dummyparam"] == "1")
             {
                 var resultJson = new System.Web.Mvc.JsonResult
@@ -19,33 +23,13 @@ namespace CatchAll.Controllers
                 };
                 return Ok(resultJson.Data);
             }
-            // http://localhost/catchall/dummyjson/other?dummyparam=1
-            if (route.Contains("dummyjson/"))
+            // http://localhost/CatchAllAPI/dummyjson/other?dummyparam=1
+            if (route.Contains("dummyjson"))
             {
                 return Ok(new System.Web.Mvc.JsonResult { Data = new { Example = "123456789" } }.Data);
             }
-            return base.Ok();
-        }
-
-        [Route("{**catchAll}")]
-        [HttpGet]
-        public async Task<IHttpActionResult> Get()
-        {
-            try
-            {
-                return await ProcessAny();
-            }
-            catch
-            {
-                return base.InternalServerError();
-            }
-        }
-
-        [Route("{**catchAll}")]
-        [HttpPost]
-        public async Task<IHttpActionResult> Post()
-        {
-            try
+            // read post body
+            if (HttpContext.Current.Request.HttpMethod == "POST")
             {
                 if (HttpContext.Current.Request.ContentLength > 0)
                 {
@@ -53,40 +37,9 @@ namespace CatchAll.Controllers
                     HttpContext.Current.Request.InputStream.Position = 0;
                     var rawRequestBody = new StreamReader(HttpContext.Current.Request.InputStream).ReadToEnd();
                 }
-                return await ProcessAny();
             }
-            catch
-            {
-                return base.InternalServerError();
-            }
-        }
 
-        [Route("{**catchAll}")]
-        [HttpPut]
-        public async Task<IHttpActionResult> Put()
-        {
-            try
-            {
-                return await ProcessAny();
-            }
-            catch
-            {
-                return base.InternalServerError();
-            }
-        }
-
-        [Route("{**catchAll}")]
-        [HttpDelete]
-        public async Task<IHttpActionResult> Delete()
-        {
-            try
-            {
-                return await ProcessAny();
-            }
-            catch
-            {
-                return base.InternalServerError();
-            }
+            return base.Ok();
         }
     }
 }
